@@ -13,4 +13,3 @@ endpoints:
   - blog-home
   - misc/database
   - core_blog-external
-  - fake

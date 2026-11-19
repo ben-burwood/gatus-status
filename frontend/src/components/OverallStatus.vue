@@ -1,9 +1,7 @@
 <template>
-    <div class="card shadow-sm text-white" :class="overall.class">
-        <div class="card-body flex-row items-center gap-3 py-5">
-            <component :is="overall.icon" class="size-7" />
-            <span class="text-xl font-semibold">{{ overall.label }}</span>
-        </div>
+    <div class="rounded-lg shadow-sm text-white px-6 py-5 flex items-center gap-3" :class="overall.class">
+        <component :is="overall.icon" class="size-7" />
+        <span class="text-xl font-semibold">{{ overall.label }}</span>
     </div>
 </template>
 
@@ -21,9 +19,9 @@ const overall = computed(() => {
     const down = props.statuses.filter((s) => s.state === "down").length;
     const unknown = props.statuses.filter((s) => s.state === "unknown").length;
 
-    if (down === props.statuses.length) return { label: "Major Outage", class: "bg-error", icon: IconCircleX };
-    if (down > 0) return { label: "Partial Outage", class: "bg-warning", icon: IconTriangleAlert };
-    if (unknown > 0) return { label: "Some Systems Unknown", class: "bg-neutral", icon: IconCircleHelp };
-    return { label: "All Systems Operational", class: "bg-success", icon: IconCircleCheck };
+    if (down === props.statuses.length) return { label: "Major Outage", class: "bg-red-600", icon: IconCircleX };
+    if (down > 0) return { label: "Partial Outage", class: "bg-amber-500", icon: IconTriangleAlert };
+    if (unknown > 0) return { label: "Some Systems Unknown", class: "bg-zinc-500", icon: IconCircleHelp };
+    return { label: "All Systems Operational", class: "bg-green-600", icon: IconCircleCheck };
 });
 </script>

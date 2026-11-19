@@ -53,8 +53,8 @@ func TestStatusesHandler(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if body := rec.Body.String(); strings.Contains(body, "internal.example") || strings.Contains(body, "secret") {
-		t.Fatalf("response leaked internal details: %s", body)
+	if body := rec.Body.String(); strings.Contains(body, "secret") {
+		t.Fatalf("response leaked errors: %s", body)
 	}
 
 	var statuses []EndpointStatus
@@ -85,6 +85,9 @@ func TestStatusesHandler(t *testing.T) {
 	}
 	if got := statuses[1].Uptime["30d"]; got != 0.5 {
 		t.Errorf("expected 30d uptime 0.5, got %v", got)
+	}
+	if got := statuses[1].Hostname; got != "internal.example" {
+		t.Errorf("expected hostname internal.example, got %q", got)
 	}
 	if len(statuses[1].History) != 2 {
 		t.Errorf("expected 2 history points, got %d", len(statuses[1].History))

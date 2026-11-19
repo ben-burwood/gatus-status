@@ -6,7 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Status</title>
     <script>
-      document.documentElement.setAttribute("data-theme", matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      if (!localStorage.getItem("theme")) {
+        localStorage.setItem("theme", matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      }
+      document.documentElement.setAttribute("data-theme", localStorage.getItem("theme"));
     </script>
   </head>
   <body>

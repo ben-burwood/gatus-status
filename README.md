@@ -2,10 +2,10 @@
 
 Clean and simple **public-facing status page** built on top of a [Gatus](https://github.com/TwiN/gatus) instance.
 
-Gatus' own UI (whilst great) shows everything, this app allows us to cherrypick specific endpoints from this and show a slimmed down public facing page which can be exposed to all, whilst Gatus itself remains protected.
+Gatus' own UI (whilst great) shows everything, this app uses the API to a Gatus instance and allows us to cherrypick specific endpoints from this and show a slimmed down public facing page which can be exposed to all, whilst Gatus itself remains protected.
 
 - Cherrypick Groups/Endpoints from a Master Gatus Instance.
-- Strip 'sensitive' data such as hostnames, errors and condition results before anything reaches the browser.
+- Strip 'sensitive' data such as errors and condition results before anything reaches the browser.
 
 ## Configuration
 

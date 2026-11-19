@@ -1,46 +1,41 @@
 <template>
-    <div class="min-h-screen w-full flex flex-col bg-base-200">
-        <!-- HEADER -->
-        <header class="bg-base-100 shadow-sm">
-            <div class="max-w-3xl mx-auto px-5 py-5 flex items-center">
-                <h1 class="text-2xl font-bold">{{ title }}</h1>
-                <div class="flex-1"></div>
-                <span v-if="updatedAt" class="text-sm text-base-content/60">Updated {{ updatedAt.toLocaleTimeString() }}</span>
+    <div class="min-h-screen w-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+        <main class="flex-1 w-full max-w-3xl mx-auto px-5 py-12 flex flex-col gap-6">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold">{{ title }}</h1>
+                <p v-if="updatedAt" class="mt-1 text-sm text-zinc-500">Updated {{ updatedAt.toLocaleTimeString() }}</p>
             </div>
-        </header>
 
-        <!-- BODY -->
-        <main class="flex-1 p-5">
-            <div class="max-w-3xl mx-auto flex flex-col gap-6">
-                <div v-if="error" role="alert" class="alert alert-warning">
-                    <IconTriangleAlert class="size-5" />
-                    <span>Unable to load the current status. Retrying…</span>
-                </div>
+            <div
+                v-if="error"
+                role="alert"
+                class="flex items-center gap-3 rounded-lg px-4 py-3 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+            >
+                <IconTriangleAlert class="size-5 shrink-0" />
+                <span>Unable to load the current status. Retrying…</span>
+            </div>
 
-                <template v-if="statuses.length">
-                    <OverallStatus :statuses="statuses" />
-                    <div class="card bg-base-100 shadow-sm">
-                        <ul class="divide-y divide-base-200">
-                            <li v-for="status in statuses" :key="status.group + '/' + status.name">
-                                <EndpointRow :status="status" />
-                            </li>
-                        </ul>
-                    </div>
-                </template>
-                <div v-else-if="loading" class="text-center mt-10">
-                    <span class="loading loading-dots loading-xl"></span>
-                </div>
+            <template v-if="statuses.length">
+                <OverallStatus :statuses="statuses" />
+                <ul class="rounded-lg bg-white shadow-sm ring-1 ring-zinc-200 divide-y divide-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800 dark:divide-zinc-800">
+                    <li v-for="status in statuses" :key="status.group + '/' + status.name">
+                        <EndpointRow :status="status" />
+                    </li>
+                </ul>
+            </template>
+            <div v-else-if="loading" class="flex justify-center mt-10">
+                <IconLoaderCircle class="size-8 animate-spin text-zinc-400" />
             </div>
         </main>
 
-        <!-- FOOTER -->
-        <footer class="border-t border-base-300 bg-base-100">
-            <div class="px-4 py-6 text-sm text-base-content/70 text-center">
+        <footer class="py-6 flex items-center justify-center gap-3 text-sm text-zinc-500">
+            <span>
                 Powered by
-                <a href="https://github.com/TwiN/gatus" target="_blank" rel="noopener" class="font-medium link link-hover">Gatus</a>
+                <a href="https://github.com/TwiN/gatus" target="_blank" rel="noopener" class="font-medium hover:underline">Gatus</a>
                 <span class="mx-1">·</span>
-                <a href="https://github.com/ben-burwood/gatus-status" target="_blank" rel="noopener" class="font-medium link link-hover">gatus-status</a>
-            </div>
+                <a href="https://github.com/ben-burwood/gatus-status" target="_blank" rel="noopener" class="font-medium hover:underline">gatus-status</a>
+            </span>
+            <ThemeToggle />
         </footer>
     </div>
 </template>
@@ -48,9 +43,11 @@
 <script setup lang="ts">
 import EndpointRow from "@/components/EndpointRow.vue";
 import OverallStatus from "@/components/OverallStatus.vue";
+import ThemeToggle from "@/components/ThemeToggle.vue";
 import { SERVER_URL } from "@/main";
 import type { EndpointStatus } from "@/types/status";
 import { onMounted, onUnmounted, ref } from "vue";
+import IconLoaderCircle from "~icons/lucide/loader-circle";
 import IconTriangleAlert from "~icons/lucide/triangle-alert";
 
 const REFRESH_INTERVAL_MS = 60 * 1000;

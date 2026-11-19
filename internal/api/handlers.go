@@ -30,7 +30,7 @@ const (
 	StateUnknown State = "unknown"
 )
 
-// HistoryPoint is a single public check result - deliberately excludes hostnames, errors and conditions
+// HistoryPoint is a single public check result - deliberately excludes errors and conditions
 type HistoryPoint struct {
 	Success   bool      `json:"success"`
 	Timestamp time.Time `json:"timestamp"`
@@ -41,6 +41,7 @@ type EndpointStatus struct {
 	Name        string             `json:"name"`
 	Group       string             `json:"group,omitempty"`
 	State       State              `json:"state"`
+	Hostname    string             `json:"hostname,omitempty"`
 	LastChecked *time.Time         `json:"lastChecked,omitempty"`
 	Uptime      map[string]float64 `json:"uptime"`
 	History     []HistoryPoint     `json:"history"`
@@ -141,6 +142,7 @@ func toEndpointStatus(gs *sdk.EndpointStatus) EndpointStatus {
 	}
 	if n := len(gs.Results); n > 0 {
 		last := gs.Results[n-1]
+		status.Hostname = last.Hostname
 		status.LastChecked = &last.Timestamp
 		if last.Success {
 			status.State = StateUp
