@@ -2,7 +2,7 @@
     <div class="min-h-screen w-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
         <main class="flex-1 w-full max-w-3xl mx-auto px-5 py-12 flex flex-col gap-6">
             <div class="text-center">
-                <h1 class="text-3xl font-bold">{{ title }}</h1>
+                <h1 class="text-3xl font-bold" :class="{ invisible: !title }">{{ title || "Status" }}</h1>
                 <p v-if="updatedAt" class="mt-1 text-sm text-zinc-500">Updated {{ updatedAt.toLocaleTimeString() }}</p>
             </div>
 
@@ -52,7 +52,8 @@ import IconTriangleAlert from "~icons/lucide/triangle-alert";
 
 const REFRESH_INTERVAL_MS = 60 * 1000;
 
-const title = ref("Status");
+// Hidden until the configured title has loaded, to avoid flashing a placeholder
+const title = ref("");
 const statuses = ref<EndpointStatus[]>([]);
 const loading = ref(true);
 const error = ref(false);
@@ -67,6 +68,7 @@ const loadConfig = async () => {
         document.title = config.title;
     } catch (e) {
         console.error("Failed to fetch config:", e);
+        title.value = "Status";
     }
 };
 
