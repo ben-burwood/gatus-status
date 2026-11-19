@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -8,10 +9,14 @@ import (
 	"time"
 
 	"gatus-status/internal/config"
-	"gatus-status/internal/gatus"
+
+	sdk "github.com/TwiN/gatus-sdk"
 )
 
-const statusCacheTTL = 30 * time.Second
+const (
+	statusCacheTTL = 30 * time.Second
+	refreshTimeout = 30 * time.Second
+)
 
 // uptimeDurations are the uptime windows fetched from Gatus for each endpoint
 var uptimeDurations = []string{"24h", "7d", "30d"}
@@ -49,7 +54,7 @@ func ConfigHandler(cfg *config.Config) http.HandlerFunc {
 }
 
 // StatusesHandler returns the public status of every configured endpoint, in configured order
-func StatusesHandler(cfg *config.Config, client *gatus.Client) http.HandlerFunc {
+func StatusesHandler(cfg *config.Config, client *sdk.Client) http.HandlerFunc {
 	var mu sync.Mutex
 	var cached []EndpointStatus
 	var expiresAt time.Time
@@ -59,7 +64,10 @@ func StatusesHandler(cfg *config.Config, client *gatus.Client) http.HandlerFunc 
 		defer mu.Unlock()
 
 		if cached == nil || time.Now().After(expiresAt) {
-			statuses, err := fetchStatuses(cfg, client)
+			// Detached from the request context, as the result is cached and shared with other visitors
+			ctx, cancel := context.WithTimeout(context.Background(), refreshTimeout)
+			statuses, err := fetchStatuses(ctx, cfg, client)
+			cancel()
 			if err != nil {
 				log.Printf("[api.StatusesHandler] Failed to fetch statuses from Gatus: %v", err)
 				http.Error(w, "failed to fetch statuses", http.StatusBadGateway)
@@ -72,8 +80,8 @@ func StatusesHandler(cfg *config.Config, client *gatus.Client) http.HandlerFunc 
 	}
 }
 
-func fetchStatuses(cfg *config.Config, client *gatus.Client) ([]EndpointStatus, error) {
-	all, err := client.AllStatuses()
+func fetchStatuses(ctx context.Context, cfg *config.Config, client *sdk.Client) ([]EndpointStatus, error) {
+	all, err := client.GetAllEndpointStatuses(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +102,7 @@ func fetchStatuses(cfg *config.Config, client *gatus.Client) ([]EndpointStatus, 
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				uptime, err := client.Uptime(gs.Key, duration)
+				uptime, err := client.GetEndpointUptime(ctx, gs.Key, duration)
 				if err != nil {
 					log.Printf("[api.fetchStatuses] Failed to fetch %s uptime for %s: %v", duration, gs.Key, err)
 					return
@@ -110,7 +118,7 @@ func fetchStatuses(cfg *config.Config, client *gatus.Client) ([]EndpointStatus, 
 }
 
 // findEndpoint matches a configured name against a Gatus endpoint's name, "group/name" or key
-func findEndpoint(all []gatus.EndpointStatus, name string) *gatus.EndpointStatus {
+func findEndpoint(all []sdk.EndpointStatus, name string) *sdk.EndpointStatus {
 	for i := range all {
 		s := &all[i]
 		if s.Name == name || s.Key == name || (s.Group != "" && s.Group+"/"+s.Name == name) {
@@ -120,7 +128,7 @@ func findEndpoint(all []gatus.EndpointStatus, name string) *gatus.EndpointStatus
 	return nil
 }
 
-func toEndpointStatus(gs *gatus.EndpointStatus) EndpointStatus {
+func toEndpointStatus(gs *sdk.EndpointStatus) EndpointStatus {
 	status := EndpointStatus{
 		Name:    gs.Name,
 		Group:   gs.Group,
