@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -27,6 +28,9 @@ const (
 	// TitleEnvVar is the environment variable for the page title
 	TitleEnvVar = "TITLE"
 
+	// AnnouncementsEnvVar is the environment variable to show or hide the announcements configured in Gatus
+	AnnouncementsEnvVar = "ANNOUNCEMENTS"
+
 	DefaultTitle = "Status"
 )
 
@@ -48,6 +52,14 @@ type Config struct {
 	Title     string      `yaml:"title"`
 	Gatus     GatusConfig `yaml:"gatus"`
 	Endpoints []string    `yaml:"endpoints"`
+
+	// Announcements shows the announcements configured in Gatus. Enabled by default if nil.
+	Announcements *bool `yaml:"announcements"`
+}
+
+// AnnouncementsEnabled returns whether the announcements configured in Gatus should be shown
+func (c *Config) AnnouncementsEnabled() bool {
+	return c.Announcements == nil || *c.Announcements
 }
 
 // LoadConfig loads the configuration from the specified path (or the default path) if it exists,
@@ -85,6 +97,13 @@ func LoadConfig(configPath string) (*Config, error) {
 	}
 	if v := os.Getenv(TitleEnvVar); v != "" {
 		config.Title = v
+	}
+	if v := os.Getenv(AnnouncementsEnvVar); v != "" {
+		show, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, fmt.Errorf("invalid %s value %q: %w", AnnouncementsEnvVar, v, err)
+		}
+		config.Announcements = &show
 	}
 
 	return config, config.validate()

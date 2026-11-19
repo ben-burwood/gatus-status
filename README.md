@@ -25,6 +25,9 @@ endpoints:
   - frontend        # endpoint name
   - core/api        # group/name
   - core_database   # Gatus key
+
+# Show the announcements configured in Gatus (default true)
+announcements: true
 ```
 
 Each entry is matched against the Gatus endpoint **name**, **`group/name`**, or **key**. Use `group/name` or the key if names are duplicated across groups. Endpoints not found in Gatus are shown as "Unknown".
@@ -37,8 +40,13 @@ Or configure entirely with environment variables (these override the file):
 | `ENDPOINTS` | Comma-separated list of endpoints, e.g. `frontend,core/api` |
 | `TITLE` | Page title (default `Status`) |
 | `GATUS_USERNAME` / `GATUS_PASSWORD` | Optional Basic Auth for the Gatus API |
+| `ANNOUNCEMENTS` | Show the announcements configured in Gatus, `true` or `false` (default `true`) |
 
 Statuses are fetched from Gatus' `/api/v1/endpoints/statuses` and `/api/v1/endpoints/{key}/uptimes/{duration}` APIs, cached for 30s, and the page refreshes every minute.
+
+### Announcements
+
+[Gatus announcements](https://github.com/TwiN/gatus#announcements) are read from `/api/v1/config` and shown as-is: active ones above the overall status, archived ones under "Past Announcements". They're the place to tell visitors about planned maintenance, as Gatus' maintenance windows only silence alerting - checks that fail during a window still show as down.
 
 ## Running
 

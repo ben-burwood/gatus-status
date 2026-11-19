@@ -13,3 +13,6 @@ endpoints:
   - blog-home
   - misc/database
   - core_blog-external
+
+# Show the announcements configured in Gatus (default true)
+announcements: true

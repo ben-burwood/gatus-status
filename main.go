@@ -24,6 +24,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/config", api.ConfigHandler(cfg))
 	mux.HandleFunc("GET /api/statuses", api.StatusesHandler(cfg, client))
+	mux.HandleFunc("GET /api/announcements", api.AnnouncementsHandler(cfg, client))
 
 	// Serve Static Frontend
 	mux.Handle("/", http.FileServer(http.Dir("./frontend/dist")))

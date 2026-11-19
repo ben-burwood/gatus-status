@@ -9,12 +9,13 @@ import (
 	"time"
 
 	"gatus-status/internal/config"
+	"gatus-status/internal/gatus"
 
 	sdk "github.com/TwiN/gatus-sdk"
 )
 
 const (
-	statusCacheTTL = 30 * time.Second
+	cacheTTL       = 30 * time.Second
 	refreshTimeout = 30 * time.Second
 )
 
@@ -50,38 +51,55 @@ type EndpointStatus struct {
 // ConfigHandler returns the public page configuration
 func ConfigHandler(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, map[string]string{"title": cfg.Title})
+		writeJSON(w, map[string]any{"title": cfg.Title, "announcements": cfg.AnnouncementsEnabled()})
 	}
 }
 
 // StatusesHandler returns the public status of every configured endpoint, in configured order
-func StatusesHandler(cfg *config.Config, client *sdk.Client) http.HandlerFunc {
+func StatusesHandler(cfg *config.Config, client *gatus.Client) http.HandlerFunc {
+	return cachedHandler("statuses", func(ctx context.Context) ([]EndpointStatus, error) {
+		return fetchStatuses(ctx, cfg, client)
+	})
+}
+
+// AnnouncementsHandler returns the announcements configured in Gatus, or none if disabled
+func AnnouncementsHandler(cfg *config.Config, client *gatus.Client) http.HandlerFunc {
+	if !cfg.AnnouncementsEnabled() {
+		return func(w http.ResponseWriter, r *http.Request) {
+			writeJSON(w, []gatus.Announcement{})
+		}
+	}
+	return cachedHandler("announcements", client.GetAnnouncements)
+}
+
+// cachedHandler serves the result of fetch, refreshing it at most once per cacheTTL
+func cachedHandler[T any](name string, fetch func(ctx context.Context) (T, error)) http.HandlerFunc {
 	var mu sync.Mutex
-	var cached []EndpointStatus
+	var cached T
 	var expiresAt time.Time
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		defer mu.Unlock()
 
-		if cached == nil || time.Now().After(expiresAt) {
+		if time.Now().After(expiresAt) {
 			// Detached from the request context, as the result is cached and shared with other visitors
 			ctx, cancel := context.WithTimeout(context.Background(), refreshTimeout)
-			statuses, err := fetchStatuses(ctx, cfg, client)
+			result, err := fetch(ctx)
 			cancel()
 			if err != nil {
-				log.Printf("[api.StatusesHandler] Failed to fetch statuses from Gatus: %v", err)
-				http.Error(w, "failed to fetch statuses", http.StatusBadGateway)
+				log.Printf("[api.cachedHandler] Failed to fetch %s from Gatus: %v", name, err)
+				http.Error(w, "failed to fetch "+name, http.StatusBadGateway)
 				return
 			}
-			cached, expiresAt = statuses, time.Now().Add(statusCacheTTL)
+			cached, expiresAt = result, time.Now().Add(cacheTTL)
 		}
 
 		writeJSON(w, cached)
 	}
 }
 
-func fetchStatuses(ctx context.Context, cfg *config.Config, client *sdk.Client) ([]EndpointStatus, error) {
+func fetchStatuses(ctx context.Context, cfg *config.Config, client *gatus.Client) ([]EndpointStatus, error) {
 	all, err := client.GetAllEndpointStatuses(ctx)
 	if err != nil {
 		return nil, err

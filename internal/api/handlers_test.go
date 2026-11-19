@@ -22,12 +22,19 @@ const gatusStatuses = `[
 	{"name":"blog","key":"_blog","results":[]}
 ]`
 
+const gatusConfig = `{"oidc":false,"authenticated":true,"announcements":[
+	{"timestamp":"2026-11-19T09:00:00Z","type":"warning","message":"Database maintenance tonight"},
+	{"timestamp":"2026-11-01T09:00:00Z","type":"operational","message":"Resolved","archived":true}
+]}`
+
 func newGatus(t *testing.T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.URL.Path == "/api/v1/endpoints/statuses":
 			w.Write([]byte(gatusStatuses))
+		case r.URL.Path == "/api/v1/config":
+			w.Write([]byte(gatusConfig))
 		case strings.HasSuffix(r.URL.Path, "/uptimes/24h"):
 			w.Write([]byte("0.990000"))
 		case strings.Contains(r.URL.Path, "/uptimes/"):
@@ -102,5 +109,46 @@ func TestStatusesHandlerGatusDown(t *testing.T) {
 	handler(rec, httptest.NewRequest(http.MethodGet, "/api/statuses", nil))
 	if rec.Code != http.StatusBadGateway {
 		t.Fatalf("expected 502, got %d", rec.Code)
+	}
+}
+
+func TestAnnouncementsHandler(t *testing.T) {
+	srv := newGatus(t)
+	defer srv.Close()
+
+	cfg := &config.Config{Gatus: config.GatusConfig{URL: srv.URL}}
+	handler := AnnouncementsHandler(cfg, gatus.NewClient(cfg.Gatus))
+
+	rec := httptest.NewRecorder()
+	handler(rec, httptest.NewRequest(http.MethodGet, "/api/announcements", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var announcements []gatus.Announcement
+	if err := json.Unmarshal(rec.Body.Bytes(), &announcements); err != nil {
+		t.Fatal(err)
+	}
+	if len(announcements) != 2 {
+		t.Fatalf("expected 2 announcements, got %d", len(announcements))
+	}
+	if a := announcements[0]; a.Type != "warning" || a.Message != "Database maintenance tonight" || a.Archived {
+		t.Errorf("unexpected announcement: %+v", a)
+	}
+	if !announcements[1].Archived {
+		t.Error("expected second announcement to be archived")
+	}
+}
+
+func TestAnnouncementsHandlerDisabled(t *testing.T) {
+	show := false
+	// Unreachable Gatus, to ensure it isn't called when disabled
+	cfg := &config.Config{Gatus: config.GatusConfig{URL: "http://127.0.0.1:1"}, Announcements: &show}
+	handler := AnnouncementsHandler(cfg, gatus.NewClient(cfg.Gatus))
+
+	rec := httptest.NewRecorder()
+	handler(rec, httptest.NewRequest(http.MethodGet, "/api/announcements", nil))
+	if rec.Code != http.StatusOK || strings.TrimSpace(rec.Body.String()) != "[]" {
+		t.Fatalf("expected 200 with no announcements, got %d: %s", rec.Code, rec.Body.String())
 	}
 }

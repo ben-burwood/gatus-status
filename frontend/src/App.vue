@@ -15,6 +15,8 @@
                 <span>Unable to load the current status. Retrying…</span>
             </div>
 
+            <AnnouncementList v-if="activeAnnouncements.length" :announcements="activeAnnouncements" />
+
             <template v-if="statuses.length">
                 <OverallStatus :statuses="statuses" />
                 <ul class="rounded-lg bg-white shadow-sm ring-1 ring-zinc-200 divide-y divide-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800 dark:divide-zinc-800">
@@ -26,6 +28,11 @@
             <div v-else-if="loading" class="flex justify-center mt-10">
                 <IconLoaderCircle class="size-8 animate-spin text-zinc-400" />
             </div>
+
+            <section v-if="pastAnnouncements.length" class="mt-4 flex flex-col gap-3">
+                <h2 class="text-lg font-semibold">Past Announcements</h2>
+                <AnnouncementList :announcements="pastAnnouncements" archived />
+            </section>
         </main>
 
         <footer class="py-6 flex items-center justify-center gap-3 text-sm text-zinc-500">
@@ -41,12 +48,13 @@
 </template>
 
 <script setup lang="ts">
+import AnnouncementList from "@/components/AnnouncementList.vue";
 import EndpointRow from "@/components/EndpointRow.vue";
 import OverallStatus from "@/components/OverallStatus.vue";
 import ThemeToggle from "@/components/ThemeToggle.vue";
 import { SERVER_URL } from "@/main";
-import type { EndpointStatus } from "@/types/status";
-import { onMounted, onUnmounted, ref } from "vue";
+import type { Announcement, EndpointStatus } from "@/types/status";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import IconLoaderCircle from "~icons/lucide/loader-circle";
 import IconTriangleAlert from "~icons/lucide/triangle-alert";
 
@@ -58,18 +66,41 @@ const statuses = ref<EndpointStatus[]>([]);
 const loading = ref(true);
 const error = ref(false);
 const updatedAt = ref<Date | null>(null);
+const showAnnouncements = ref(false);
+const announcements = ref<Announcement[]>([]);
 let refreshHandler: ReturnType<typeof setInterval> | null = null;
+
+const activeAnnouncements = computed(() => announcements.value.filter((a) => !a.archived));
+const pastAnnouncements = computed(() => announcements.value.filter((a) => a.archived));
 
 const loadConfig = async () => {
     try {
         const res = await fetch(`${SERVER_URL}/config`);
-        const config: { title: string } = await res.json();
+        const config: { title: string; announcements: boolean } = await res.json();
         title.value = config.title;
         document.title = config.title;
+        showAnnouncements.value = config.announcements;
     } catch (e) {
         console.error("Failed to fetch config:", e);
         title.value = "Status";
     }
+};
+
+// Failures keep the last announcements shown, as they're secondary to the statuses
+const loadAnnouncements = async () => {
+    if (!showAnnouncements.value) return;
+    try {
+        const res = await fetch(`${SERVER_URL}/announcements`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        announcements.value = await res.json();
+    } catch (e) {
+        console.error("Failed to fetch announcements:", e);
+    }
+};
+
+const refresh = () => {
+    loadStatuses();
+    loadAnnouncements();
 };
 
 const loadStatuses = async () => {
@@ -88,9 +119,9 @@ const loadStatuses = async () => {
 };
 
 onMounted(() => {
-    loadConfig();
+    loadConfig().then(loadAnnouncements);
     loadStatuses();
-    refreshHandler = setInterval(loadStatuses, REFRESH_INTERVAL_MS);
+    refreshHandler = setInterval(refresh, REFRESH_INTERVAL_MS);
 });
 
 onUnmounted(() => {

@@ -14,3 +14,12 @@ export interface EndpointStatus {
     uptime: Record<string, number>;
     history: HistoryPoint[];
 }
+
+export type AnnouncementType = "outage" | "warning" | "information" | "operational" | "none";
+
+export interface Announcement {
+    timestamp: string;
+    type: AnnouncementType;
+    message: string;
+    archived?: boolean;
+}
