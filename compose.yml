@@ -1,0 +1,15 @@
+services:
+  gatus-status:
+    container_name: gatus-status
+    build: .
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    environment:
+      - GATUS_STATUS_CONFIG_PATH=/config/config.yml
+      # Alternatively, configure entirely with environment variables:
+      # - GATUS_URL=http://gatus:8080
+      # - ENDPOINTS=frontend,core/api
+      # - TITLE=Status
+    volumes:
+      - ./config:/config:ro

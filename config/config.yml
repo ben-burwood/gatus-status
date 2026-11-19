@@ -1,0 +1,16 @@
+title: Status
+
+gatus:
+  url: https://status.twin.sh
+
+  # Optional Basic Auth, if the Gatus API is protected
+  # username: ${GATUS_USERNAME}
+  # password: ${GATUS_PASSWORD}
+
+# Gatus endpoint names to show, in display order.
+# Each entry can be the endpoint name, "group/name" or the Gatus key (group_name).
+endpoints:
+  - blog-home
+  - misc/database
+  - core_blog-external
+  - fake
