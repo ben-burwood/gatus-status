@@ -18,7 +18,17 @@
 
             <AnnouncementList v-if="activeAnnouncements.length" :announcements="activeAnnouncements" />
 
-            <template v-if="statuses.length">
+            <div
+                v-if="monitoringUnavailable"
+                role="alert"
+                class="rounded-lg shadow-sm text-white px-6 py-5 flex items-center gap-3 bg-zinc-500"
+            >
+                <IconServerOff class="size-7 shrink-0" />
+                <div>
+                    <p class="text-xl font-semibold">Monitoring Unavailable</p>
+                </div>
+            </div>
+            <template v-else-if="statuses.length">
                 <OverallStatus :statuses="statuses" />
                 <ul class="rounded-lg bg-white shadow-sm ring-1 ring-zinc-200 divide-y divide-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800 dark:divide-zinc-800">
                     <li v-for="status in statuses" :key="status.group + '/' + status.name">
@@ -57,6 +67,7 @@ import { SERVER_URL } from "@/main";
 import type { Announcement, EndpointStatus } from "@/types/status";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import IconLoaderCircle from "~icons/lucide/loader-circle";
+import IconServerOff from "~icons/lucide/server-off";
 import IconTriangleAlert from "~icons/lucide/triangle-alert";
 
 const REFRESH_INTERVAL_MS = 60 * 1000;
@@ -66,6 +77,8 @@ const title = ref("");
 const statuses = ref<EndpointStatus[]>([]);
 const loading = ref(true);
 const error = ref(false);
+// Set when the server is reachable but Gatus is not, so the last statuses would be stale
+const monitoringUnavailable = ref(false);
 const updatedAt = ref<Date | null>(null);
 const logo = ref("");
 const showAnnouncements = ref(false);
@@ -109,10 +122,18 @@ const refresh = () => {
 const loadStatuses = async () => {
     try {
         const res = await fetch(`${SERVER_URL}/statuses`);
+        // The server responds with this code when it cannot reach Gatus, unlike a proxy error in front of it
+        if (!res.ok && (await res.json().catch(() => null))?.error === "gatus_unavailable") {
+            console.error("Gatus is unavailable");
+            monitoringUnavailable.value = true;
+            error.value = false;
+            return;
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         statuses.value = await res.json();
         updatedAt.value = new Date();
         error.value = false;
+        monitoringUnavailable.value = false;
     } catch (e) {
         console.error("Failed to fetch statuses:", e);
         error.value = true;

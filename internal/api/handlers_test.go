@@ -110,6 +110,13 @@ func TestStatusesHandlerGatusDown(t *testing.T) {
 	if rec.Code != http.StatusBadGateway {
 		t.Fatalf("expected 502, got %d", rec.Code)
 	}
+	var body ErrorResponse
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("failed to decode error body: %v", err)
+	}
+	if body.Error != ErrGatusUnavailable {
+		t.Errorf("expected error %q, got %q", ErrGatusUnavailable, body.Error)
+	}
 }
 
 func TestAnnouncementsHandler(t *testing.T) {

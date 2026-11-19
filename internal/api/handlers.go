@@ -31,6 +31,14 @@ const (
 	StateUnknown State = "unknown"
 )
 
+// ErrGatusUnavailable is the error code returned when Gatus cannot be reached
+const ErrGatusUnavailable = "gatus_unavailable"
+
+// ErrorResponse is the JSON body of an error response
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 // HistoryPoint is a single public check result - deliberately excludes errors and conditions
 type HistoryPoint struct {
 	Success   bool      `json:"success"`
@@ -93,7 +101,9 @@ func cachedHandler[T any](name string, fetch func(ctx context.Context) (T, error
 			cancel()
 			if err != nil {
 				log.Printf("[api.cachedHandler] Failed to fetch %s from Gatus: %v", name, err)
-				http.Error(w, "failed to fetch "+name, http.StatusBadGateway)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadGateway)
+				json.NewEncoder(w).Encode(ErrorResponse{Error: ErrGatusUnavailable})
 				return
 			}
 			cached, expiresAt = result, time.Now().Add(cacheTTL)
