@@ -9,13 +9,13 @@ import (
 
 func TestLoadConfigFromFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.yml")
-	os.WriteFile(path, []byte("title: Acme Status\ngatus:\n  url: https://gatus.example/\nendpoints:\n  - frontend\n  - core/api\n"), 0o644)
+	os.WriteFile(path, []byte("title: Acme Status\nlogo: https://acme.example/logo.png\ngatus:\n  url: https://gatus.example/\nendpoints:\n  - frontend\n  - core/api\n"), 0o644)
 
 	cfg, err := LoadConfig(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Title != "Acme Status" || cfg.Gatus.URL != "https://gatus.example" {
+	if cfg.Title != "Acme Status" || cfg.Logo != "https://acme.example/logo.png" || cfg.Gatus.URL != "https://gatus.example" {
 		t.Errorf("unexpected config: %+v", cfg)
 	}
 	if !reflect.DeepEqual(cfg.Endpoints, []string{"frontend", "core/api"}) {

@@ -1,4 +1,6 @@
 title: Status
+# Optional logo shown above the title
+# logo: https://example.com/logo.png
 
 gatus:
   url: https://status.twin.sh

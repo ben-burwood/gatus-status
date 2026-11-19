@@ -2,6 +2,7 @@
     <div class="min-h-screen w-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
         <main class="flex-1 w-full max-w-3xl mx-auto px-5 py-12 flex flex-col gap-6">
             <div class="text-center">
+                <img v-if="logo" :src="logo" alt="" class="mx-auto mb-4 max-h-16 max-w-48 object-contain" />
                 <h1 class="text-3xl font-bold" :class="{ invisible: !title }">{{ title || "Status" }}</h1>
                 <p v-if="updatedAt" class="mt-1 text-sm text-zinc-500">Updated {{ updatedAt.toLocaleTimeString() }}</p>
             </div>
@@ -66,6 +67,7 @@ const statuses = ref<EndpointStatus[]>([]);
 const loading = ref(true);
 const error = ref(false);
 const updatedAt = ref<Date | null>(null);
+const logo = ref("");
 const showAnnouncements = ref(false);
 const announcements = ref<Announcement[]>([]);
 let refreshHandler: ReturnType<typeof setInterval> | null = null;
@@ -76,9 +78,10 @@ const pastAnnouncements = computed(() => announcements.value.filter((a) => a.arc
 const loadConfig = async () => {
     try {
         const res = await fetch(`${SERVER_URL}/config`);
-        const config: { title: string; announcements: boolean } = await res.json();
+        const config: { title: string; logo: string; announcements: boolean } = await res.json();
         title.value = config.title;
         document.title = config.title;
+        logo.value = config.logo;
         showAnnouncements.value = config.announcements;
     } catch (e) {
         console.error("Failed to fetch config:", e);

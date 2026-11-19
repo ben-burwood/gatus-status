@@ -27,6 +27,8 @@ const (
 
 	// TitleEnvVar is the environment variable for the page title
 	TitleEnvVar = "TITLE"
+	// LogoEnvVar is the environment variable for the URL of the logo shown above the title
+	LogoEnvVar = "LOGO"
 
 	// AnnouncementsEnvVar is the environment variable to show or hide the announcements configured in Gatus
 	AnnouncementsEnvVar = "ANNOUNCEMENTS"
@@ -50,6 +52,7 @@ type GatusConfig struct {
 
 type Config struct {
 	Title     string      `yaml:"title"`
+	Logo      string      `yaml:"logo"` // URL of the logo shown above the title
 	Gatus     GatusConfig `yaml:"gatus"`
 	Endpoints []string    `yaml:"endpoints"`
 
@@ -97,6 +100,9 @@ func LoadConfig(configPath string) (*Config, error) {
 	}
 	if v := os.Getenv(TitleEnvVar); v != "" {
 		config.Title = v
+	}
+	if v := os.Getenv(LogoEnvVar); v != "" {
+		config.Logo = v
 	}
 	if v := os.Getenv(AnnouncementsEnvVar); v != "" {
 		show, err := strconv.ParseBool(v)

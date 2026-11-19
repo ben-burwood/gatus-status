@@ -13,6 +13,8 @@ Configure with a YAML file (default `config/config.yml`, override with `GATUS_ST
 
 ```yaml
 title: Status
+# Optional logo shown above the title
+# logo: https://example.com/logo.png
 
 gatus:
   url: http://gatus:8080
@@ -39,6 +41,7 @@ Or configure entirely with environment variables (these override the file):
 | `GATUS_URL` | Base URL of the Gatus instance |
 | `ENDPOINTS` | Comma-separated list of endpoints, e.g. `frontend,core/api` |
 | `TITLE` | Page title (default `Status`) |
+| `LOGO` | Optional URL of a logo shown above the title |
 | `GATUS_USERNAME` / `GATUS_PASSWORD` | Optional Basic Auth for the Gatus API |
 | `ANNOUNCEMENTS` | Show the announcements configured in Gatus, `true` or `false` (default `true`) |
 

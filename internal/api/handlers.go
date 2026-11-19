@@ -51,7 +51,11 @@ type EndpointStatus struct {
 // ConfigHandler returns the public page configuration
 func ConfigHandler(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, map[string]any{"title": cfg.Title, "announcements": cfg.AnnouncementsEnabled()})
+		writeJSON(w, map[string]any{
+			"title":         cfg.Title,
+			"logo":          cfg.Logo,
+			"announcements": cfg.AnnouncementsEnabled(),
+		})
 	}
 }
 
